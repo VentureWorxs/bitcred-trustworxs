@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BitCred SD-JWT Demo</title>
+<title>BITCred: SD-JWT Credential Demo</title>
 <meta name="description" content="Issue, present and verify an SD-JWT verifiable credential, then watch a strict verifier reject five attacks.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,8 @@
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 'Inter', system-ui, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
   .eyebrow { color: var(--blue); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 0; }
-  h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 8px 0 12px; }
+  h1 { font-size: clamp(32px, 6vw, 44px); line-height: 1.1; margin: 8px 0 4px; letter-spacing: -0.01em; }
+  .subtitle { font-size: clamp(18px, 3vw, 22px); font-weight: 600; color: var(--blue); margin: 0 0 12px; }
   p.lede { color: var(--muted); margin: 0 0 24px; }
   .finding { background: var(--blue-bg); border-left: 3px solid var(--blue); padding: 14px 16px; border-radius: 6px; margin-bottom: 24px; }
   .finding strong { display: block; margin-bottom: 4px; }
@@ -42,16 +43,48 @@
   .tag { font-weight: 700; font-size: 12px; }
   .ok { color: var(--pass); } .bad { color: var(--fail); } .warn { color: var(--warn); font-weight: 600; }
   .detail { color: var(--muted); font-size: 13px; display: block; overflow-wrap: anywhere; }
-  footer { margin-top: 40px; color: var(--muted); font-size: 14px; }
+  .plain { margin: 8px 0 40px; }
+  .plain h2, .section-title { font-size: 22px; margin: 0 0 14px; }
+  .cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .card h3 { font-size: 15px; margin: 0 0 6px; color: var(--blue); }
+  .card p { margin: 0; font-size: 15px; }
+  .note { margin: 16px 0 0; font-size: 15px; color: var(--muted); }
+  .note strong { color: var(--text); }
+  footer { margin-top: 40px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); padding-top: 16px; }
+  footer p { margin: 4px 0; }
   a { color: var(--blue); }
 </style>
 </head>
 <body>
 <main>
   <p class="eyebrow">Trustworxs · verifiable credentials</p>
-  <h1>SD-JWT credential demo</h1>
-  <p class="lede">Each run issues a membership credential (synthetic data) bound to a holder key, presents two of its five claims to a verifier, and then tries five attacks. Everything runs in this Worker; nothing is stored.</p>
+  <h1>BITCred</h1>
+  <p class="subtitle">SD-JWT credential demo</p>
+  <p class="lede">How an AI agent could prove who it works for and what it may do, without handing over a password.</p>
 
+  <section class="plain" aria-labelledby="plain-title">
+    <h2 id="plain-title">In plain terms</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>The problem</h3>
+        <p>AI assistants are starting to act for us: booking travel, buying supplies, checking records. A website needs to know two things before it lets an agent in: who it works for, and what it is allowed to do. Today that usually means handing over a password or API key, which can be copied and opens everything.</p>
+      </div>
+      <div class="card">
+        <h3>The idea</h3>
+        <p>A digital credential works like a tamper-proof ID card. The organization that issues it signs it, so anyone can check it is genuine without calling the issuer. The holder shows only what a site needs, such as membership tier and not a full name. It also only works with a secret key that never leaves the holder, so a stolen copy is useless. The attacks below test exactly that.</p>
+      </div>
+      <div class="card">
+        <h3>Where it&rsquo;s heading</h3>
+        <p>Picture an assistant carrying a credential that says &ldquo;may spend up to $50 on travel for Alex until Friday.&rdquo; Any service can check it in milliseconds, it expires on its own, and Alex can revoke it at any time. The same pattern could let a nurse prove a license, or a patient share consent, without exposing anything else.</p>
+      </div>
+    </div>
+    <p class="note"><strong>Where blockchain fits.</strong> Credentials like this come out of the same movement as blockchain: trust that rests on cryptographic signatures anyone can check, not on one company&rsquo;s database. Shared ledgers can add a public record of which issuers to trust and which credentials were revoked, and stablecoin payments could let an agent pay within its limit. This demo covers the signature and privacy layer and does not use a blockchain yet.</p>
+  </section>
+
+  <h2 class="section-title">For developers</h2>
+  <p class="lede">Each run issues a membership credential (synthetic data) bound to a holder key, presents two of its five claims to a verifier, and then tries five attacks. Everything runs in this Worker; nothing is stored.</p>
   <div class="finding">
     <strong>Key binding is opt-in.</strong>
     With <code>@sd-jwt/sd-jwt-vc</code>, <code>verify()</code> skips the holder check unless you pass <code>keyBindingNonce</code> and <code>expectedKeyBindingAudience</code>. A stolen credential with no key-binding JWT is then accepted. The strict verifier used below sets both and requires the key-binding JWT.
@@ -60,7 +93,10 @@
   <button id="run" type="button">Run the demo</button><span id="summary" aria-live="polite"></span>
   <div id="out"></div>
 
-  <footer>Issuer metadata: <a href="/.well-known/jwt-vc-issuer" class="mono">/.well-known/jwt-vc-issuer</a></footer>
+  <footer>
+    <p>Source code: <a href="https://github.com/VentureWorxs/bitcred-trustworxs">github.com/VentureWorxs/bitcred-trustworxs</a></p>
+    <p>Issuer metadata: <a href="/.well-known/jwt-vc-issuer" class="mono">/.well-known/jwt-vc-issuer</a></p>
+  </footer>
 </main>
 <script>
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
