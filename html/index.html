@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BitCred SD-JWT Demo</title>
+<meta name="description" content="Issue, present and verify an SD-JWT verifiable credential, then watch a strict verifier reject five attacks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1e2e; --blue: #0d6e8a; --blue-dk: #09516a; --blue-bg: rgba(13,110,138,0.08);
+    --cream: #f0f6f8; --border: #dde8ec; --gray: #6b7a8d; --white: #ffffff;
+    --pass: #1f7a4d; --fail: #b3261e; --warn: #9a5b00;
+    --bg: var(--cream); --card: var(--white); --text: var(--navy); --muted: var(--gray);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1622; --card: #12212f; --text: #e6eef2; --muted: #93a4b5; --border: #22374a;
+      --blue: #4bb3d1; --blue-dk: #6cc6e0; --blue-bg: rgba(75,179,209,0.12);
+      --pass: #5fd39a; --fail: #ff8a80; --warn: #f2b25c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 'Inter', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  .eyebrow { color: var(--blue); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 0; }
+  h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 8px 0 12px; }
+  p.lede { color: var(--muted); margin: 0 0 24px; }
+  .finding { background: var(--blue-bg); border-left: 3px solid var(--blue); padding: 14px 16px; border-radius: 6px; margin-bottom: 24px; }
+  .finding strong { display: block; margin-bottom: 4px; }
+  code, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; }
+  button { background: var(--blue); color: #fff; border: 0; border-radius: 8px; padding: 12px 20px; font: 600 15px 'Inter', sans-serif; cursor: pointer; }
+  button:hover { background: var(--blue-dk); }
+  button:disabled { opacity: .6; cursor: wait; }
+  #summary { margin-left: 12px; font-weight: 600; }
+  .step { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-top: 16px; }
+  .step h2 { font-size: 16px; margin: 0 0 8px; }
+  .line { color: var(--muted); overflow-wrap: anywhere; }
+  .check { display: grid; grid-template-columns: 48px 1fr; gap: 8px; padding: 4px 0; }
+  .tag { font-weight: 700; font-size: 12px; }
+  .ok { color: var(--pass); } .bad { color: var(--fail); } .warn { color: var(--warn); font-weight: 600; }
+  .detail { color: var(--muted); font-size: 13px; display: block; overflow-wrap: anywhere; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 14px; }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Trustworxs · verifiable credentials</p>
+  <h1>SD-JWT credential demo</h1>
+  <p class="lede">Each run issues a membership credential (synthetic data) bound to a holder key, presents two of its five claims to a verifier, and then tries five attacks. Everything runs in this Worker; nothing is stored.</p>
+
+  <div class="finding">
+    <strong>Key binding is opt-in.</strong>
+    With <code>@sd-jwt/sd-jwt-vc</code>, <code>verify()</code> skips the holder check unless you pass <code>keyBindingNonce</code> and <code>expectedKeyBindingAudience</code>. A stolen credential with no key-binding JWT is then accepted. The strict verifier used below sets both and requires the key-binding JWT.
+  </div>
+
+  <button id="run" type="button">Run the demo</button><span id="summary" aria-live="polite"></span>
+  <div id="out"></div>
+
+  <footer>Issuer metadata: <a href="/.well-known/jwt-vc-issuer" class="mono">/.well-known/jwt-vc-issuer</a></footer>
+</main>
+<script>
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const btn = document.getElementById('run'), out = document.getElementById('out'), summary = document.getElementById('summary');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; summary.textContent = ''; summary.className = ''; out.replaceChildren();
+    try {
+      const res = await fetch('/api/run');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const report = await res.json();
+      for (const step of report.steps) {
+        const card = el('section', 'step');
+        card.append(el('h2', null, step.title));
+        for (const line of step.lines) {
+          card.append(el('div', line.includes('ACCEPTED') ? 'line warn' : 'line mono', line));
+        }
+        for (const c of step.checks) {
+          const row = el('div', 'check');
+          row.append(el('span', `tag ${c.ok ? 'ok' : 'bad'}`, c.ok ? 'PASS' : 'FAIL'));
+          const body = el('span', null, c.label);
+          if (c.detail) body.append(el('span', 'detail mono', c.detail));
+          row.append(body);
+          card.append(row);
+        }
+        out.append(card);
+      }
+      summary.textContent = report.passed ? 'All checks passed' : 'Some checks failed';
+      summary.className = report.passed ? 'ok' : 'bad';
+    } catch (e) {
+      summary.textContent = `Run failed: ${e.message}`; summary.className = 'bad';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,17 +1,21 @@
 // Shared setup for the SD-JWT VC demo: keys and the issuer, holder and verifier
-// instances. Everything runs in memory; no network calls.
+// instances. Uses WebCrypto only, so the same code runs in Node and on Cloudflare Workers.
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
-import { ES256, digest, generateSalt } from '@sd-jwt/crypto-nodejs';
-import type { webcrypto } from 'node:crypto';
+import { ES256, digest, generateSalt } from '@sd-jwt/crypto-browser';
 
-export type Jwk = webcrypto.JsonWebKey;
-export type KeyPair = { publicKey: Jwk; privateKey: Jwk };
+export type KeyPair = Awaited<ReturnType<typeof ES256.generateKeyPair>>;
+export type Jwk = KeyPair['publicKey'];
 
-export const ISSUER = 'https://issuer.trustworxs.example';
 export const VERIFIER = 'https://verifier.trustworxs.example';
 export const VCT = 'https://trustworxs.example/credentials/membership';
 
 export const generateKeyPair = (): Promise<KeyPair> => ES256.generateKeyPair();
+
+// Rebuilds a key pair from a private EC JWK by dropping the private part (d).
+export function keyPairFromPrivateJwk(privateKey: Jwk): KeyPair {
+  const { d: _d, key_ops: _ops, ...publicKey } = privateKey;
+  return { privateKey, publicKey };
+}
 
 // Settings shared by every party: hash and salt functions for disclosures.
 const base = {
@@ -54,3 +58,14 @@ export async function createVerifier(issuerPublicKey: Jwk) {
 }
 
 export const nowSeconds = () => Math.floor(Date.now() / 1000);
+
+export const base64urlDecode = (s: string) =>
+  new TextDecoder().decode(
+    Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)),
+  );
+
+export const base64urlEncode = (s: string) =>
+  btoa(String.fromCharCode(...new TextEncoder().encode(s)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');

@@ -1,0 +1,18 @@
+name = "bitcred-trustworxs"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+
+routes = [
+  { pattern = "bitcred.trustworxs.com", custom_domain = true }
+]
+
+# Static page; requests that match no file fall through to the Worker.
+[assets]
+directory = "html"
+
+[vars]
+ISSUER_URL = "https://bitcred.trustworxs.com"
+
+# Secrets — set via `wrangler secret put`:
+#   npm run keygen | wrangler secret put ISSUER_JWK
+# For local dev, put ISSUER_JWK='<jwk json>' in .dev.vars (gitignored).
