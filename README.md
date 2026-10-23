@@ -73,3 +73,7 @@ With `@sd-jwt/sd-jwt-vc` 0.23, `verify()` does not check key binding unless you 
 - Each run generates new holder and attacker keys, and the in-page verifier is the same Worker as the issuer.
 - No revocation. Status checks are disabled until Token Status List is added.
 - The verifier does not keep track of used nonces. Replays are caught only because each request has a new nonce.
+
+## License
+
+[MIT](LICENSE)
