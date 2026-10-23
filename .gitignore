@@ -153,3 +153,6 @@ vite.config.ts.timestamp-*
 .dev.vars
 .dev.vars.*
 .DS_Store
+
+# Private working notes (not for the public repo)
+docs/context.md
